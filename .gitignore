@@ -1,0 +1,7 @@
+# Secrets — never commit the real DATABASE_URL/password. Keep .env.example as the template.
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
