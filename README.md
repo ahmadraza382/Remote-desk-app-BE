@@ -1,15 +1,15 @@
 # RemoteDesk Signaling Server
 
-FastAPI + PostgreSQL. It performs **device registration**, **access control**, **pairing**,
-**SDP/ICE relay**, and **connection-history logging**. No media flows through it — once WebRTC
-connects, this server is out of the data path.
+FastAPI + **MariaDB** (MySQL-compatible). It performs **device registration**, **access control**,
+**pairing**, **SDP/ICE relay**, and **connection-history logging**. No media flows through it —
+once WebRTC connects, this server is out of the data path.
 
-## What it stores (PostgreSQL)
+## What it stores (MariaDB)
 
 - `devices` — registry: `device_uuid` (PK), unique 12-digit `code` (public), secret `auth_token`,
   `mac_address`, `device_name`, `os_info`, `registered_at`, `last_seen`, `status` (active|blocked).
 - `connection_history` — one row per pairing: controller/host codes + names, `connected_at`,
-  `ended_at`, `status` (connected|ended|failed).
+  `ended_at`, `status` (connected|ended|failed|declined).
 
 Tables are created automatically on startup from `schema.sql`.
 
@@ -79,19 +79,21 @@ The VPS-side coturn install (with a matching `static-auth-secret`) is performed 
 
 `DATABASE_URL` is read from `signaling/.env` automatically on startup (via python-dotenv).
 There is **no default** — if `.env` is missing the variable, the server fails fast with a
-clear message. Copy `.env.example` → `.env` and fill in your local PostgreSQL password.
+clear message. Copy `.env.example` → `.env` and fill in your local MariaDB password.
 `.env` is git-ignored (never commit the real password); `.env.example` is the committed template.
 
 ```
 # signaling/.env
-DATABASE_URL=postgresql://postgres:<password>@localhost:5432/remotedesk
+DATABASE_URL=mysql://root:<password>@localhost:3306/remotedesk
+# also accepted: mariadb://user:pass@host:3306/remotedesk
 ```
 
 ## Run (development)
 
 ```bash
-# 1. PostgreSQL (install it, then create the database once)
-createdb remotedesk        # or: psql -U postgres -c "CREATE DATABASE remotedesk;"
+# 1. MariaDB (install it, then create the database once)
+#    Windows: install MariaDB, open HeidiSQL / mysql CLI
+mysql -u root -p -e "CREATE DATABASE remotedesk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 2. Config — copy the template and set your password
 cp .env.example .env       # Windows: copy .env.example .env
@@ -107,6 +109,6 @@ py -m uvicorn main:app --port 8000     # reads DATABASE_URL from .env; no manual
 The `devices` and `connection_history` tables are created automatically on startup from
 `schema.sql`.
 
-Dev uses `ws://` (plain). `wss://` (TLS) is production only — added in a later phase. For
-cross-network testing, expose the server with a tunnel (e.g. `ngrok http 8000`) and set the
-app's `SIGNALING_URL` (in `src/shared/config.ts`) to the `wss://` tunnel host.
+Dev uses `ws://` (plain). `wss://` (TLS) is production only. For cross-network testing, expose
+the server with a tunnel (e.g. `ngrok http 8000`) and set the app's signaling URL to the tunnel
+host.

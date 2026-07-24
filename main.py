@@ -1,4 +1,4 @@
-"""RemoteDesk signaling server (FastAPI + PostgreSQL).
+"""RemoteDesk signaling server (FastAPI + MariaDB).
 
 Responsibilities: device registration, ACCESS CONTROL (only registered + active devices,
 authenticated by their secret token, may pair; a code authenticates only from its bound
